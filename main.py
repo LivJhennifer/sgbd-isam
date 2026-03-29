@@ -70,3 +70,4 @@ print(f"  -> Objetivo: Observar a manutenção das páginas e a eventual libera�
 # 5 - Menção ao Custo (já impresso durante as buscas)
 print(f"\nCusto aproximado das buscas: Observado nos logs anteriores")
 print(f"  -> Objetivo: Comparar o efeito do crescimento das cadeias de overflow.")
+print(f"  Caminho percorrido: {' -> '.join(caminho)}")
