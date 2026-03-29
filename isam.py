@@ -240,3 +240,75 @@ class ISAM:
             ov.next = new_ov
             self.metrics["overflow_criadas"] += 1
             print(f"  → Cadeia de overflow cheia em {leaf.name}! Nova página criada: {new_ov.records}")
+
+    def search_equality(self, target_key):
+        # 1. Navigate down the tree
+        leaf, path = self._find_leaf(target_key)
+        cost = len(path) # The path length gives us the initial visited nodes
+        
+        # 2. Search in the primary leaf (records are tuples now)
+        for record in leaf.records:
+            if record[0] == target_key: # record[0] is the key
+                return record, cost, path 
+       
+        # 3. Search in the overflow pages
+        current_overflow = leaf.overflow_head
+        overflow_count = 1
+        
+        while current_overflow is not None:
+            path.append(f"Overflow {overflow_count} from {leaf.name}")
+            cost += 1
+            
+            for record in current_overflow.records:
+                if record[0] == target_key:
+                    return record, cost, path
+                    
+            current_overflow = current_overflow.next
+            overflow_count += 1
+
+        return None, cost, path
+
+    def search_interval(self, min_key, max_key):
+        # 1. Navigate to the starting leaf
+        start_leaf, path = self._find_leaf(min_key)
+        cost = len(path)
+        found_records = []
+        
+        # 2. Find the index of the starting leaf in the ordered list
+        leaf_idx = self.leaves_in_order.index(start_leaf)
+        
+        # 3. Sequential scan
+        while leaf_idx < len(self.leaves_in_order):
+            current_leaf = self.leaves_in_order[leaf_idx]
+            
+            # If it's not the starting leaf (already in path), count it
+            if current_leaf != start_leaf:
+                path.append(current_leaf.name)
+                cost += 1
+
+            # Stop condition: if the smallest key in this leaf is greater than max_key
+            if current_leaf.records and current_leaf.records[0][0] > max_key:
+                break
+
+            # Collect from primary leaf
+            for record in current_leaf.records:
+                if min_key <= record[0] <= max_key:
+                    found_records.append(record)
+
+            # Collect from overflow pages
+            current_overflow = current_leaf.overflow_head
+            overflow_count = 1
+            while current_overflow is not None:
+                path.append(f"Overflow {overflow_count} from {current_leaf.name}")
+                cost += 1
+                for record in current_overflow.records:
+                    if min_key <= record[0] <= max_key:
+                        found_records.append(record)
+                
+                current_overflow = current_overflow.next
+                overflow_count += 1
+
+            # Move to the next leaf in the sequence
+            leaf_idx += 1
+
+        return found_records, cost, path
